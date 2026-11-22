@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CZ Deleted Scenes (Xash3D, экспер.)</string>
+    <string name="compat_title">Экспериментальная сборка</string>
+    <string name="compat_message">Ресурсы czeror запускаются без подмены, но оригинальные cz.dll и client.dll (Windows x86) на Android не работают, а их интерфейс построен на VGUI2, который Xash3D не поддерживает.\n\nВместо них загружается ARM-логика CS 1.6 (ReGameDLL). Поэтому NPC, миссии, цели и оружие кампании Deleted Scenes работать не будут.\n\nЭто проверка движка и ресурсов, а не рабочая кампания. Запустить?</string>
+    <string name="btn_launch">Запустить</string>
+    <string name="btn_exit">Выход</string>
+    <string name="err_no_engine">Не найден Xash3D FWGS (su.xash.engine). Установите движок и повторите.</string>
+    <string name="err_launch">Не удалось запустить движок Xash3D FWGS.</string>
+</resources>
