@@ -52,21 +52,18 @@ def patch_android_compatibility(root):
         write(bot_path, text, crlf)
         print("  bot.h: исправлен Q_memset")
 
-    # 3. Чистим CMakeLists.txt и вырезаем проблемные файлы
+    # 3. Добавляем принудительное отключение ошибок компилятора в корень CMakeLists.txt
     cmakelists_path = find_file(root, "CMakeLists.txt")
     text, crlf = read(cmakelists_path)
-    if "-Werror" in text:
-        text = text.replace("-Werror", "")
     
-    # Полный список файлов, которые гарантированно вызывают ошибки на современном NDK
-    troublesome_files = [
-        "h_battery.cpp", "func_break.cpp", "gib.cpp", 
-        "doors.cpp", "buttons.cpp", "plats.cpp"
-    ]
-    for file_name in troublesome_files:
-        if file_name in text:
-            text = text.replace(file_name, "")
-            print(f"  CMakeLists.txt: исключен {file_name}")
+    # Удаляем любые жесткие требования -Werror
+    text = text.replace("-Werror", "")
+    
+ж    # Вставляем в самое начало CMakeLists.txt команду отключения предупреждений как ошибок
+    global_fix = "add_definitions(-w -Wno-everything)\n"
+    if global_fix not in text:
+        text = global_fix + text
+        print("  CMakeLists.txt: добавлены глобальные флаги подавления ошибок")
 
     write(cmakelists_path, text, crlf)
 
