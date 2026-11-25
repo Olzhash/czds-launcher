@@ -44,20 +44,31 @@ def find_file(root, name):
             return os.path.join(dirpath, name)
     fail("не найден файл " + name + " в " + root)
 
-# Исправление osconfig.h для Android ARM64 (убирает фатальный варнинг force_align_arg_pointer)
-def patch_osconfig(root):
-    path = find_file(root, "osconfig.h")
-    text, crlf = read(path)
-    target = "#define FORCE_STACK_ALIGN __attribute__((force_align_arg_pointer))"
-    if target in text:
+# Исправления совместимости с Android NDK / Clang
+def patch_android_compatibility(root):
+    # 1. Исправляем force_align_arg_pointer в osconfig.h для ARM64
+    osconfig_path = find_file(root, "osconfig.h")
+    text, crlf = read(osconfig_path)
+    target_os = "#define FORCE_STACK_ALIGN __attribute__((force_align_arg_pointer))"
+    if target_os in text:
         replacement = """#if defined(__i386__) || defined(_M_IX86)
 \t#define FORCE_STACK_ALIGN __attribute__((force_align_arg_pointer))
 #else
 \t#define FORCE_STACK_ALIGN
 #endif"""
-        text = text.replace(target, replacement)
-        write(path, text, crlf)
+        text = text.replace(target_os, replacement)
+        write(osconfig_path, text, crlf)
         print("  osconfig.h: макрос FORCE_STACK_ALIGN адаптирован под ARM64")
+
+    # 2. Исправляем memset для entvars_t в bot.h
+    bot_path = find_file(root, "bot.h")
+    text, crlf = read(bot_path)
+    old_memset = "Q_memset(&pentBot->v, 0, sizeof(pentBot->v));"
+    new_memset = "Q_memset((void*)&pentBot->v, 0, sizeof(pentBot->v));"
+    if old_memset in text:
+        text = text.replace(old_memset, new_memset)
+        write(bot_path, text, crlf)
+        print("  bot.h: исправлен вызов Q_memset для entvars_t")
 
 def main():
     if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
@@ -65,7 +76,7 @@ def main():
         sys.exit(2)
     root = sys.argv[1]
     print("Применяем исправления для CZDS к " + root)
-    patch_osconfig(root)
+    patch_android_compatibility(root)
     print("Готово.")
 
 if __name__ == "__main__":
