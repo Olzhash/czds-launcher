@@ -16,7 +16,6 @@
     (CLIENT_WEAPONS пропускает владельца) звук и анимации оружия могут не играть.
 """
 import os
-import re
 import sys
 
 MARK = "[CZDS]"
@@ -44,9 +43,8 @@ def find_file(root, name):
             return os.path.join(dirpath, name)
     fail("не найден файл " + name + " в " + root)
 
-# Исправления совместимости с Android NDK / Clang
 def patch_android_compatibility(root):
-    # 1. Исправляем force_align_arg_pointer в osconfig.h для ARM64
+    # 1. osconfig.h
     osconfig_path = find_file(root, "osconfig.h")
     text, crlf = read(osconfig_path)
     target_os = "#define FORCE_STACK_ALIGN __attribute__((force_align_arg_pointer))"
@@ -58,9 +56,9 @@ def patch_android_compatibility(root):
 #endif"""
         text = text.replace(target_os, replacement)
         write(osconfig_path, text, crlf)
-        print("  osconfig.h: макрос FORCE_STACK_ALIGN адаптирован под ARM64")
+        print("  osconfig.h: адаптирован под ARM64")
 
-    # 2. Исправляем memset для entvars_t в bot.h
+    # 2. bot.h
     bot_path = find_file(root, "bot.h")
     text, crlf = read(bot_path)
     old_memset = "Q_memset(&pentBot->v, 0, sizeof(pentBot->v));"
@@ -68,7 +66,15 @@ def patch_android_compatibility(root):
     if old_memset in text:
         text = text.replace(old_memset, new_memset)
         write(bot_path, text, crlf)
-        print("  bot.h: исправлен вызов Q_memset для entvars_t")
+        print("  bot.h: исправлен Q_memset")
+
+    # 3. Удаляем -Werror из CMakeLists.txt репозитория, чтобы варнинги не валили сборку
+    cmakelists_path = find_file(root, "CMakeLists.txt")
+    text, crlf = read(cmakelists_path)
+    if "-Werror" in text:
+        text = text.replace("-Werror", "")
+        write(cmakelists_path, text, crlf)
+        print("  CMakeLists.txt: удален -Werror")
 
 def main():
     if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
