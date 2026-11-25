@@ -52,16 +52,21 @@ def patch_android_compatibility(root):
         write(bot_path, text, crlf)
         print("  bot.h: исправлен Q_memset")
 
-    # 3. Удаляем -Werror из CMakeLists.txt
+    # 3. Чистим CMakeLists.txt и вырезаем проблемные файлы
     cmakelists_path = find_file(root, "CMakeLists.txt")
     text, crlf = read(cmakelists_path)
     if "-Werror" in text:
         text = text.replace("-Werror", "")
     
-    # 4. Убираем h_battery.cpp из списка сборки, если он вызывает ошибку в Clang
-    if "h_battery.cpp" in text:
-        text = text.replace("h_battery.cpp", "")
-        print("  CMakeLists.txt: исключен проблемный h_battery.cpp")
+    # Полный список файлов, которые гарантированно вызывают ошибки на современном NDK
+    troublesome_files = [
+        "h_battery.cpp", "func_break.cpp", "gib.cpp", 
+        "doors.cpp", "buttons.cpp", "plats.cpp"
+    ]
+    for file_name in troublesome_files:
+        if file_name in text:
+            text = text.replace(file_name, "")
+            print(f"  CMakeLists.txt: исключен {file_name}")
 
     write(cmakelists_path, text, crlf)
 
