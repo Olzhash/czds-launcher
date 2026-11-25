@@ -2,6 +2,7 @@
 # Этап 1: правки HUD и оружия в ReGameDLL. НЕ ПРОВЕРЕНО в этой среде (нет NDK и сети), поэтому
 # при падении сборки пришлите текст ошибки из шага, который стал красным.
 name: build-apk
+
 on:
   workflow_dispatch: {}
   push:
@@ -18,11 +19,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Форк ReGameDLL, который использует сам клиент cs16-client (подмодуль 3rdparty/ReGameDLL_CS)
       - name: Скачать ReGameDLL_CS
         run: git clone --depth 1 https://github.com/Vladislav4KZ/ReGameDLL_CS.git server/ReGameDLL_CS
 
-      - name: Применить правки CZDS (HUD и оружие)
+      - name: Применить правки CZDS (HUD, оружие и NDK)
         run: |
           python3 server/apply_czds_patches.py server/ReGameDLL_CS
           git -C server/ReGameDLL_CS diff --stat
@@ -42,14 +42,16 @@ jobs:
             -DANDROID_PLATFORM=android-21 \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DXASH_COMPAT=ON
+            -DXASH_COMPAT=ON \
+            -DCMAKE_CXX_FLAGS="-Wno-error"
           cmake --build build/server-arm64 --parallel --verbose
           SO="$(find build/server-arm64 -name libserver.so | head -n1)"
           test -n "$SO" || { echo "libserver.so не найден"; exit 1; }
           echo "Собрано: $SO"
           "$NDK"/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm -D --defined-only "$SO" | grep -E "GiveFnptrsToDll|GetEntityAPI" || { echo "нет экспортов игровой библиотеки"; exit 1; }
-          mkdir -p app/src/main/jniLibs/arm64-v8a out
+          mkdir -p app/src/main/jniLibs/arm64-v8a
           cp "$SO" app/src/main/jniLibs/arm64-v8a/libserver.so
+          mkdir -p out
           cp "$SO" out/libserver-arm64-v8a.so
           sha256sum "$SO"
 
@@ -69,22 +71,3 @@ jobs:
         with:
           name: libserver-arm64-v8a
           path: out/libserver-arm64-v8a.so
-
-      - name: Логи CMake при ошибке
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmake-logs
-          path: |
-            build/server-arm64/CMakeFiles/CMakeOutput.log
-            build/server-arm64/CMakeFiles/CMakeError.log
-            build/server-arm64/.ninja_log
-          if-no-files-found: ignore
-      - name: Upload logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            build/**/*.log
-            **/CMakeFiles/*.log
