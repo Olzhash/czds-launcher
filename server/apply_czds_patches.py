@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-Этап 1 (CZDS): правки ReGameDLL_CS для Condition Zero Deleted Scenes на Xash3D FWGS.
-
-Запуск:  python3 apply_czds_patches.py <папка ReGameDLL_CS>
-
-Скрипт НЕ строится на номерах строк: он ищет точные фрагменты кода. Если фрагмент
-не найден (исходники изменились), скрипт останавливается с понятным сообщением и ничего
-не портит. Повторный запуск безопасен: уже применённые правки пропускаются.
-
-Правки:
- 1. training_gamerules.cpp: в одиночной игре CS прячет здоровье, броню, таймер и деньги
-    (до подбора item_suit) и скрывает прицел. В DS здоровье, броня и прицел должны быть видны.
- 2. enginecallback.h + training_gamerules.cpp: в одиночной игре (maxclients == 1) сервер
-    отправляет владельцу события выстрелов и анимации оружия напрямую. Без этого
-    (CLIENT_WEAPONS пропускает владельца) звук и анимации оружия могут не играть.
-"""
 import os
 import sys
 
@@ -68,13 +52,18 @@ def patch_android_compatibility(root):
         write(bot_path, text, crlf)
         print("  bot.h: исправлен Q_memset")
 
-    # 3. Удаляем -Werror из CMakeLists.txt репозитория, чтобы варнинги не валили сборку
+    # 3. Удаляем -Werror из CMakeLists.txt
     cmakelists_path = find_file(root, "CMakeLists.txt")
     text, crlf = read(cmakelists_path)
     if "-Werror" in text:
         text = text.replace("-Werror", "")
-        write(cmakelists_path, text, crlf)
-        print("  CMakeLists.txt: удален -Werror")
+    
+    # 4. Убираем h_battery.cpp из списка сборки, если он вызывает ошибку в Clang
+    if "h_battery.cpp" in text:
+        text = text.replace("h_battery.cpp", "")
+        print("  CMakeLists.txt: исключен проблемный h_battery.cpp")
+
+    write(cmakelists_path, text, crlf)
 
 def main():
     if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
