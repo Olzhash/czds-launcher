@@ -43,7 +43,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DXASH_COMPAT=ON
-          cmake --build build/server-arm64 --parallel
+          cmake --build build/server-arm64 --parallel --verbose
           SO="$(find build/server-arm64 -name libserver.so | head -n1)"
           test -n "$SO" || { echo "libserver.so не найден"; exit 1; }
           echo "Собрано: $SO"
