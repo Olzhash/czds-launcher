@@ -80,3 +80,11 @@ jobs:
             build/server-arm64/CMakeFiles/CMakeError.log
             build/server-arm64/.ninja_log
           if-no-files-found: ignore
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build/**/*.log
+            **/CMakeFiles/*.log
