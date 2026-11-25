@@ -59,7 +59,6 @@ def patch_android_compatibility(root):
     # Удаляем любые жесткие требования -Werror
     text = text.replace("-Werror", "")
     
-ж    # Вставляем в самое начало CMakeLists.txt команду отключения предупреждений как ошибок
     global_fix = "add_definitions(-w -Wno-everything)\n"
     if global_fix not in text:
         text = global_fix + text
