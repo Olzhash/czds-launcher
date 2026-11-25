@@ -52,17 +52,17 @@ def patch_android_compatibility(root):
         write(bot_path, text, crlf)
         print("  bot.h: исправлен Q_memset")
 
-    # 3. Добавляем принудительное отключение ошибок компилятора в корень CMakeLists.txt
+    # 3. Добавляем глобальные флаги ослабления компилятора в CMakeLists.txt
     cmakelists_path = find_file(root, "CMakeLists.txt")
     text, crlf = read(cmakelists_path)
     
-    # Удаляем любые жесткие требования -Werror
     text = text.replace("-Werror", "")
     
-    global_fix = "add_definitions(-w -Wno-everything)\n"
+    # Внедряем флаги для отключения строгих проверок старого кода
+    global_fix = "add_definitions(-w -Wno-everything -fpermissive)\n"
     if global_fix not in text:
         text = global_fix + text
-        print("  CMakeLists.txt: добавлены глобальные флаги подавления ошибок")
+        print("  CMakeLists.txt: добавлены флаги -fpermissive и подавления ошибок")
 
     write(cmakelists_path, text, crlf)
 
